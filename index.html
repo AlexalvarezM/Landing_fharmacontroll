@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PharmaControl SaaS | Control Inteligente de Inventario</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            danger: '#EF4444',
+                            warning: '#2563EB',
+                            safe: '#38BDF8',
+                            stable: '#F8FAFC',
+                            dark: '#0B0F19',
+                            card: '#151E2E',
+                            border: '#1F2937'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    },
+                    boxShadow: {
+                        'glow-red': '0 0 20px rgba(239, 68, 68, 0.4)',
+                        'glow-blue': '0 0 20px rgba(37, 99, 235, 0.4)',
+                        'glow-cyan': '0 0 20px rgba(56, 189, 248, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos base estándar para evitar errores de linting en el IDE */
+        .glass {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 dark:bg-brand-dark text-gray-900 dark:text-gray-100 overflow-x-hidden font-sans antialiased transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- Library Setup & Fallbacks ---
+        const { useState, useEffect, useMemo } = React;
+        
+        // Framer Motion browser global is usually 'Motion'
+        const motion = (window.Motion && window.Motion.motion) ? window.Motion.motion : (props) => <div {...props}>{props.children}</div>;
+        const AnimatePresence = (window.Motion && window.Motion.AnimatePresence) ? window.Motion.AnimatePresence : ({children}) => <>{children}</>;
+
+        // --- Constants ---
+        const GLASS = "glass border border-white/20 bg-white/70 dark:bg-brand-card/70 dark:border-brand-border";
+
+        // --- Utils & Hooks ---
+        const useTheme = () => {
+            const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+            
+            useEffect(() => {
+                const root = window.document.documentElement;
+                if (theme === 'dark') {
+                    root.classList.add('dark');
+                } else {
+                    root.classList.remove('dark');
+                }
+                localStorage.setItem('theme', theme);
+            }, [theme]);
+
+            return [theme, setTheme];
+        };
+
+        // --- Components ---
+
+        const Icon = ({ name, className = "w-6 h-6", size = 24 }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} className={className} style={{width: size, height: size}}></i>;
+        };
+
+        const Logo = ({ size = 40, className = "" }) => (
+            <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]">
+                    <defs>
+                        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#38BDF8" />
+                            <stop offset="100%" stopColor="#2563EB" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    {/* Medical Plus Base */}
+                    <path d="M35 15H65V35H85V65H65V85H35V65H15V35H35V15Z" fill="#151E2E" stroke="url(#logo-grad)" strokeWidth="2" />
+                    {/* Glowing stylized 'A' */}
+                    <path d="M50 25L30 75M50 25L70 75M35 60H65" stroke="#38BDF8" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" />
+                    <path d="M50 25L30 75M50 25L70 75M35 60H65" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+                    {/* Neon Accent */}
+                    <circle cx="50" cy="50" r="2" fill="#EF4444" className="animate-pulse" />
+                </svg>
+            </div>
+        );
+
+        const Navbar = ({ theme, setTheme }) => {
+            return (
+                <nav className={`fixed top-0 w-full z-50 px-6 py-4 flex justify-between items-center ${GLASS}`}>
+                    <div className="flex items-center gap-2 group cursor-pointer">
+                        <Logo size={42} className="group-hover:scale-110 transition-transform duration-500" />
+                        <span className="text-xl font-extrabold tracking-tight font-outfit hidden md:block">
+                            Pharma<span className="text-blue-600">Control</span>
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <button 
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                        >
+                            {theme === 'dark' ? <Icon name="sun" /> : <Icon name="moon" />}
+                        </button>
+                        <a 
+                            href="https://pharmacontroll.netlify.app" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-all hover:shadow-lg active:scale-95 inline-flex items-center justify-center"
+                        >
+                            Acceder al Panel
+                        </a>
+                    </div>
+                </nav>
+            );
+        };
+
+        const Hero = () => {
+            return (
+                <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+                    <div className="flex-1 text-center lg:text-left">
+                        <motion.h1 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-5xl lg:text-7xl font-extrabold mb-6 leading-tight font-outfit"
+                        >
+                            Evita pérdidas por <br/>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-600">
+                                medicamentos vencidos
+                            </span>
+                        </motion.h1>
+                        <motion.p 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-lg text-gray-600 dark:text-gray-400 mb-10 max-w-2xl"
+                        >
+                            Controla tu inventario con un Mapa de Riesgo visual interactivo. Automatiza alertas, optimiza stock y protege la rentabilidad de tu farmacia independiente.
+                        </motion.p>
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                        >
+                            <a 
+                                href="https://pharmacontroll.netlify.app"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all shadow-xl hover:shadow-blue-500/20 text-center inline-flex items-center justify-center"
+                            >
+                                Empezar Gratis
+                            </a>
+                            <a 
+                                href="https://pharmacontroll.netlify.app"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${GLASS} px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white/10 transition-all text-center inline-flex items-center justify-center`}
+                            >
+                                Ver Demo
+                            </a>
+                        </motion.div>
+                    </div>
+
+                    <div className="flex-1 relative">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.8 }}
+                            className="relative z-10 animate-float"
+                        >
+                            <div className={`${GLASS} rounded-[2.5rem] p-4 shadow-2xl border-white/30`}>
+                                <div className="bg-brand-dark rounded-[2rem] overflow-hidden border border-gray-800">
+                                    {/* Mockup UI */}
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-center mb-8">
+                                            <div className="h-4 w-32 bg-gray-800 rounded-full" />
+                                            <div className="flex gap-2">
+                                                <div className="w-3 h-3 rounded-full bg-red-500" />
+                                                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                                                <div className="w-3 h-3 rounded-full bg-green-500" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-4 mb-8">
+                                            {[1,2,3].map(i => (
+                                                <div key={i} className={`h-24 rounded-2xl flex flex-col justify-center items-center gap-2 ${GLASS}`}>
+                                                    <div className={`w-8 h-8 rounded-full ${i===1 ? 'bg-red-500/20' : i===2 ? 'bg-blue-500/20' : 'bg-cyan-500/20'}`} />
+                                                    <div className="h-2 w-12 bg-gray-700 rounded-full" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="space-y-4">
+                                            {[1,2,3,4].map(i => (
+                                                <div key={i} className={`flex items-center justify-between p-4 rounded-xl border-white/5 ${GLASS}`}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-lg ${i===1 ? 'bg-red-500' : 'bg-gray-700'}`} />
+                                                        <div className="space-y-1">
+                                                            <div className="h-2 w-24 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                                                            <div className="h-2 w-16 bg-gray-400 dark:bg-gray-700 rounded-full" />
+                                                        </div>
+                                                    </div>
+                                                    <div className={`px-3 py-1 rounded-full text-[10px] font-bold ${i===1 ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-800 text-gray-400'}`}>
+                                                        {i===1 ? 'CRÍTICO' : 'OK'}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                        {/* Background Blobs */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-blue-600/30 blur-[120px] rounded-full -z-10 animate-pulse-slow" />
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/20 blur-[100px] rounded-full -z-10" />
+                    </div>
+                </section>
+            );
+        };
+
+        const PartnerLogos = () => {
+            const partners = [
+                { name: "Farma Value", img: "images/farma_value.png" },
+                { name: "Farmacia Samaria", img: "images/farmacia_samaria.png" },
+                { name: "Farmacia Managua", img: "images/farmacia_managua.png" },
+                { name: "Farmacia Saba", img: "images/farmacia_saba.png" }
+            ];
+
+            return (
+                <section className="py-10 border-y border-gray-200/50 dark:border-brand-border/50 bg-white/30 dark:bg-brand-card/30 glass">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-6">
+                            Optimizado para las principales cadenas y farmacias de Nicaragua
+                        </p>
+                        <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16">
+                            {partners.map((p, i) => (
+                                <motion.div 
+                                    key={i}
+                                    whileHover={{ scale: 1.05 }}
+                                    className="h-12 md:h-14 flex items-center justify-center grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300 bg-white dark:bg-white/95 rounded-xl px-5 py-2 shadow-sm border border-gray-100 dark:border-transparent"
+                                >
+                                    <img 
+                                        src={p.img} 
+                                        alt={p.name} 
+                                        className="h-full max-w-[130px] object-contain"
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Features = () => {
+            const features = [
+                {
+                    title: "Escaneo Inteligente",
+                    desc: "Cron diario que revisa automáticamente cada lote de medicamentos.",
+                    icon: "scan",
+                    color: "from-purple-500 to-indigo-600"
+                },
+                {
+                    title: "4 Niveles de Alerta",
+                    desc: "Código visual intuitivo: Crítico, Atención, Seguro y Estable.",
+                    icon: "bell",
+                    color: "from-blue-500 to-cyan-600"
+                },
+                {
+                    title: "Stock Crítico",
+                    desc: "Recibe avisos antes de que el desabastecimiento afecte tus ventas.",
+                    icon: "package",
+                    color: "from-orange-500 to-red-600"
+                },
+                {
+                    title: "Flexibilidad Total",
+                    desc: "Usa el modo local offline o sincroniza en la nube con Firebase.",
+                    icon: "cloud",
+                    color: "from-emerald-500 to-teal-600"
+                }
+            ];
+
+            return (
+                <section className="py-24 px-6 max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold mb-4 font-outfit">Diseñado para farmacias modernas</h2>
+                        <p className="text-gray-500">Herramientas potentes para el control total de tu inventario.</p>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {features.map((f, i) => (
+                            <motion.div 
+                                key={i}
+                                whileHover={{ y: -10 }}
+                                className={`${GLASS} p-8 rounded-3xl group relative overflow-hidden`}
+                            >
+                                <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center bg-gradient-to-br ${f.color} text-white shadow-lg`}>
+                                    <Icon name={f.icon} />
+                                </div>
+                                <h3 className="text-xl font-bold mb-3">{f.title}</h3>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                                    {f.desc}
+                                </p>
+                                <div className="absolute -bottom-1 -right-1 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </motion.div>
+                        ))}
+                    </div>
+                </section>
+            );
+        };
+
+        const DemoWidget = () => {
+            const [days, setDays] = useState(45);
+
+            const alertData = useMemo(() => {
+                if (days < 30) return { label: 'ALTA / PELIGRO', color: 'bg-red-500', glow: 'shadow-glow-red', text: 'Vencimiento Inminente' };
+                if (days < 60) return { label: 'MEDIA / ATENCIÓN', color: 'bg-blue-600', glow: 'shadow-glow-blue', text: 'Revisar Pronto' };
+                if (days < 90) return { label: 'BAJA / SEGURO', color: 'bg-sky-400', glow: 'shadow-glow-cyan', text: 'Vencimiento Próximo' };
+                return { label: 'ESTABLE', color: 'bg-slate-100 dark:bg-slate-800', glow: '', text: 'Estado Óptimo' };
+            }, [days]);
+
+            return (
+                <section className="py-24 px-6 bg-blue-600/5">
+                    <div className={`max-w-4xl mx-auto p-12 rounded-[3rem] text-center ${GLASS}`}>
+                        <h2 className="text-3xl font-bold mb-8 font-outfit">Simulador de Mapa de Riesgo</h2>
+                        <p className="text-gray-500 mb-12">Desliza para ver cómo cambian las alertas según la fecha de caducidad.</p>
+                        
+                        <div className="flex flex-col items-center gap-12">
+                            <div className="relative">
+                                <motion.div 
+                                    animate={{ 
+                                        scale: days < 30 ? [1, 1.05, 1] : 1,
+                                    }}
+                                    transition={{ repeat: Infinity, duration: 1 }}
+                                    className={`w-48 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${alertData.color} ${alertData.glow}`}
+                                >
+                                    <div className="w-40 h-14 border-4 border-white/20 rounded-full flex items-center justify-center">
+                                        <span className={`font-black text-xs tracking-widest ${days > 90 ? 'text-gray-500' : 'text-white'}`}>
+                                            PHARMA-PILL
+                                        </span>
+                                    </div>
+                                </motion.div>
+                                <div className="mt-6">
+                                    <span className={`text-sm font-bold uppercase tracking-tighter ${days < 30 ? 'text-red-500' : 'text-gray-500'}`}>
+                                        {alertData.label}
+                                    </span>
+                                    <p className="text-xl font-bold mt-1">{alertData.text}</p>
+                                </div>
+                            </div>
+
+                            <div className="w-full max-w-md space-y-4">
+                                <div className="flex justify-between text-sm font-bold">
+                                    <span>Vence en: <span className="text-blue-600">{days} días</span></span>
+                                    <span className="text-gray-400">0 - 120d</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="120" 
+                                    value={days} 
+                                    onChange={(e) => setDays(parseInt(e.target.value))}
+                                    className="w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+
+
+        const Testimonials = () => {
+            return (
+                <section className="py-24 px-6 bg-gray-100 dark:bg-white/5">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="flex flex-col lg:flex-row gap-16 items-center">
+                            <div className="flex-1">
+                                <h2 className="text-4xl font-bold mb-6 font-outfit">Confianza y Seguridad</h2>
+                                <p className="text-gray-500 mb-8 leading-relaxed">
+                                    Nuestros datos están protegidos con cifrado de grado militar AES-256. La privacidad de tu inventario es nuestra prioridad número uno.
+                                </p>
+                                <div className="flex gap-4">
+                                    <div className="flex -space-x-4">
+                                        {[
+                                            "images/farma_value.png",
+                                            "images/farmacia_samaria.png",
+                                            "images/farmacia_managua.png",
+                                            "images/farmacia_saba.png"
+                                        ].map((url, i) => (
+                                            <div key={i} className="w-12 h-12 rounded-full border-4 border-gray-50 dark:border-brand-dark overflow-hidden bg-white shadow-sm flex items-center justify-center">
+                                                <img 
+                                                    src={url} 
+                                                    alt={["Farma Value", "Farmacia Samaria", "Farmacia Managua", "Farmacia Saba"][i]} 
+                                                    className="w-full h-full object-contain p-1.5" 
+                                                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=F${i}&background=random`; }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="text-sm">
+                                        <div className="font-bold">+500 Farmacias en Nicaragua</div>
+                                        <div className="text-gray-500 italic">"Simplemente indispensable para el control local"</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex-1 grid gap-6">
+                                <div className={`${GLASS} p-8 rounded-3xl`}>
+                                    <p className="italic text-lg mb-6 text-gray-600 dark:text-gray-300">"PharmaControl salvó mi inventario. Antes perdíamos miles de córdobas en productos vencidos que no detectábamos a tiempo en nuestra sucursal de Managua."</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-blue-500/50 bg-blue-100 shadow-lg">
+                                            <img 
+                                                src="https://img.freepik.com/foto-gratis/doctora-latina-sonriente-hospital_23-2148161741.jpg" 
+                                                alt="Dra. Marta Rodríguez" 
+                                                className="w-full h-full object-cover" 
+                                                onError={(e) => { e.target.src = "https://ui-avatars.com/api/?name=Marta+Rodriguez&background=2563EB&color=fff"; }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg">Dra. Marta Rodríguez</div>
+                                            <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Farmacia San José - Nicaragua</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+
+        const Footer = () => {
+            return (
+                <footer className="py-12 px-6 border-t border-gray-200 dark:border-brand-border">
+                    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="flex items-center gap-2">
+                            <Logo size={32} />
+                            <span className="font-bold font-outfit">PharmaControl SaaS</span>
+                        </div>
+                        <div className="flex gap-8 text-sm text-gray-500 font-medium">
+                            <a href="#" className="hover:text-blue-600">Privacidad</a>
+                            <a href="#" className="hover:text-blue-600">Términos</a>
+                            <a href="#" className="hover:text-blue-600">Contacto</a>
+                        </div>
+                        <div className="text-sm text-gray-400">
+                            &copy; 2026 PharmaControl. Todos los derechos reservados.
+                        </div>
+                    </div>
+                </footer>
+            );
+        };
+
+        const App = () => {
+            const [theme, setTheme] = useTheme();
+
+            useEffect(() => {
+                // Prevent zoom
+                const handleWheel = (e) => {
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                    }
+                };
+
+                const handleKeydown = (e) => {
+                    if (e.ctrlKey && (e.key === '=' || e.key === '-' || e.key === '0')) {
+                        e.preventDefault();
+                    }
+                };
+
+                window.addEventListener('wheel', handleWheel, { passive: false });
+                window.addEventListener('keydown', handleKeydown);
+
+                return () => {
+                    window.removeEventListener('wheel', handleWheel);
+                    window.removeEventListener('keydown', handleKeydown);
+                };
+            }, []);
+
+            return (
+                <div className="min-h-screen">
+                    <Navbar theme={theme} setTheme={setTheme} />
+                    <Hero />
+                    <PartnerLogos />
+                    <Features />
+                    <DemoWidget />
+                    <Testimonials />
+                    <Footer />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
