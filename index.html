@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PharmaControl SaaS | Control Inteligente de Inventario</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,7 +61,6 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-gray-50 dark:bg-brand-dark text-gray-900 dark:text-gray-100 overflow-x-hidden font-sans antialiased transition-colors duration-300">
@@ -70,8 +70,23 @@
         // --- Library Setup & Fallbacks ---
         const { useState, useEffect, useMemo } = React;
         
-        // Framer Motion browser global is usually 'Motion'
-        const motion = (window.Motion && window.Motion.motion) ? window.Motion.motion : (props) => <div {...props}>{props.children}</div>;
+        // Robust Proxy fallback for motion to prevent component crash if Framer Motion is not loaded
+        const createFallbackComponent = (tagName) => {
+            return React.forwardRef(({ children, initial, animate, transition, exit, whileHover, whileTap, ...props }, ref) => {
+                return React.createElement(tagName, { ref, ...props }, children);
+            });
+        };
+
+        const motionFallback = new Proxy(createFallbackComponent, {
+            get: (target, prop) => {
+                if (typeof prop === 'string') {
+                    return createFallbackComponent(prop);
+                }
+                return target[prop];
+            }
+        });
+
+        const motion = (window.Motion && window.Motion.motion) ? window.Motion.motion : motionFallback;
         const AnimatePresence = (window.Motion && window.Motion.AnimatePresence) ? window.Motion.AnimatePresence : ({children}) => <>{children}</>;
 
         // --- Constants ---
@@ -162,13 +177,18 @@
         };
 
         const Hero = () => {
+            const [isMounted, setIsMounted] = useState(false);
+            useEffect(() => {
+                setIsMounted(true);
+            }, []);
+
             return (
                 <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
                     <div className="flex-1 text-center lg:text-left">
                         <motion.h1 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-5xl lg:text-7xl font-extrabold mb-6 leading-tight font-outfit"
+                            className={`text-5xl lg:text-7xl font-extrabold mb-6 leading-tight font-outfit transition-all duration-700 delay-100 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                         >
                             Evita pérdidas por <br/>
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-blue-600">
@@ -179,7 +199,7 @@
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-lg text-gray-600 dark:text-gray-400 mb-10 max-w-2xl"
+                            className={`text-lg text-gray-600 dark:text-gray-400 mb-10 max-w-2xl transition-all duration-700 delay-200 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                         >
                             Controla tu inventario con un Mapa de Riesgo visual interactivo. Automatiza alertas, optimiza stock y protege la rentabilidad de tu farmacia independiente.
                         </motion.p>
@@ -187,7 +207,7 @@
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                            className={`flex flex-col sm:flex-row gap-4 justify-center lg:justify-start transition-all duration-700 delay-300 transform ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                         >
                             <a 
                                 href="https://pharmacontroll.netlify.app"
@@ -213,7 +233,7 @@
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.8 }}
-                            className="relative z-10 animate-float"
+                            className={`relative z-10 animate-float transition-all duration-1000 delay-400 transform ${isMounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
                         >
                             <div className={`${GLASS} rounded-[2.5rem] p-4 shadow-2xl border-white/30`}>
                                 <div className="bg-brand-dark rounded-[2rem] overflow-hidden border border-gray-800">
@@ -282,7 +302,7 @@
                                 <motion.div 
                                     key={i}
                                     whileHover={{ scale: 1.05 }}
-                                    className="h-12 md:h-14 flex items-center justify-center grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300 bg-white dark:bg-white/95 rounded-xl px-5 py-2 shadow-sm border border-gray-100 dark:border-transparent"
+                                    className="h-12 md:h-14 flex items-center justify-center grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300 bg-white dark:bg-white/95 rounded-xl px-5 py-2 shadow-sm border border-gray-100 dark:border-transparent hover:scale-105 transform"
                                 >
                                     <img 
                                         src={p.img} 
@@ -336,7 +356,7 @@
                             <motion.div 
                                 key={i}
                                 whileHover={{ y: -10 }}
-                                className={`${GLASS} p-8 rounded-3xl group relative overflow-hidden`}
+                                className={`${GLASS} p-8 rounded-3xl group relative overflow-hidden transition-all duration-300 hover:-translate-y-2 transform`}
                             >
                                 <div className={`w-14 h-14 rounded-2xl mb-6 flex items-center justify-center bg-gradient-to-br ${f.color} text-white shadow-lg`}>
                                     <Icon name={f.icon} />
@@ -376,7 +396,7 @@
                                         scale: days < 30 ? [1, 1.05, 1] : 1,
                                     }}
                                     transition={{ repeat: Infinity, duration: 1 }}
-                                    className={`w-48 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${alertData.color} ${alertData.glow}`}
+                                    className={`w-48 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${alertData.color} ${alertData.glow} ${days < 30 ? 'animate-pulse' : ''}`}
                                 >
                                     <div className="w-40 h-14 border-4 border-white/20 rounded-full flex items-center justify-center">
                                         <span className={`font-black text-xs tracking-widest ${days > 90 ? 'text-gray-500' : 'text-white'}`}>
