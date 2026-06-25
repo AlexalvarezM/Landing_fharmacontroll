@@ -61,12 +61,20 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        Babel.registerPreset("react-classic", {
+            presets: [
+                Babel.availablePresets["env"],
+                [Babel.availablePresets["react"], { runtime: "classic" }]
+            ]
+        });
+    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-gray-50 dark:bg-brand-dark text-gray-900 dark:text-gray-100 overflow-x-hidden font-sans antialiased transition-colors duration-300">
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script type="text/babel" data-presets="react-classic">
         // --- Library Setup & Fallbacks ---
         const { useState, useEffect, useMemo } = React;
         
